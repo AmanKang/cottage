@@ -2,32 +2,24 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Cottage Weekend</title>
     <meta name="description" content="Cottage weekend trip details and itinerary.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <div class="app-shell">
-      <header class="hero">
-        <div>
-          <p class="eyebrow">June 26-29, 2026</p>
-          <h1>cottage weekend with the boys</h1>
-          <p class="hero-copy">Cottage weekend with the boys at Algonquin Highlands.</p>
-        </div>
-        <div class="hero-actions">
-          <a class="button primary" href="https://www.airbnb.ca/trips/v1/reservation-details/ro/RESERVATION2_CHECKIN/HMPCAB2FBX" target="_blank" rel="noopener noreferrer">Airbnb</a>
-          <a class="button" href="https://maps.app.goo.gl/2sG6tNWT6Kz2xB2F7" target="_blank" rel="noopener noreferrer">Maps</a>
-        </div>
-      </header>
-
-      <main id="app" class="content" aria-live="polite">
-        <section class="panel loading-panel">
-          <p>Loading cottage trip...</p>
-        </section>
-      </main>
+      <div class="hero-img-wrap" style="background-image: url('cottage.webp')">
+      </div>
+      <div class="content-sheet">
+        <div class="sheet-handle"></div>
+        <main id="app" aria-live="polite">
+          <div class="loading-panel">Loading trip…</div>
+        </main>
+      </div>
     </div>
-
     <script src="firebase-config.js"></script>
     <script src="app.js" defer></script>
   </body>

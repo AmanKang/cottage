@@ -17,8 +17,11 @@
   const appEl = document.querySelector("#app");
   const ui = {
     groceryOpen: undefined,
+    travelOpen: true,
+    mealsOpen: false,
     assignee: null,
-    toastTimer: null
+    toastTimer: null,
+    selectedDay: "friday"
   };
 
   let store = null;
@@ -37,7 +40,7 @@
   function createSeedState() {
     return {
       meta: {
-        title: "cottage weekend with the boys",
+        title: "Cottage Weekend with the Boys",
         description: "Cottage weekend with the boys at Algonquin Highlands.",
         dateRange: "Friday June 26 to Monday June 29, 2026",
         address: "3499 Livingstone Lake Road, Township Of Algonquin Highlands, ON P0A",
@@ -279,7 +282,7 @@
   }
 
   function render() {
-    const groceryOpen = ui.groceryOpen ?? window.matchMedia("(min-width: 860px)").matches;
+    const groceryOpen = ui.groceryOpen ?? false;
     appEl.innerHTML = [
       renderTripInfo(),
       renderGroceries(groceryOpen),
@@ -289,46 +292,64 @@
 
   function renderTripInfo() {
     const meta = state.meta || {};
-    const modeLabel = store && store.mode === "firestore" ? "Firestore live sync" : "Local preview";
     return `
-      <section class="panel panel-pad trip-grid">
-        <div class="info-card">
-          <span class="status-pill">${escapeHtml(modeLabel)}</span>
-          <div>
-            <span class="label">Address</span>
-            <p class="address">${escapeHtml(meta.address)}</p>
-          </div>
-          <div class="action-row">
-            <button class="button primary" type="button" data-action="copy-address">Copy address</button>
-            <a class="button" href="${escapeHtml(meta.mapsUrl)}" target="_blank" rel="noopener noreferrer">Open in Maps</a>
-            <a class="button" href="${escapeHtml(meta.airbnbUrl)}" target="_blank" rel="noopener noreferrer">Airbnb details</a>
-          </div>
+      <div class="trip-header">
+        <h1>${escapeHtml(meta.title || "Cottage Weekend")}</h1>
+        <div class="trip-meta-row">
+          <span class="trip-meta-item">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            Algonquin Highlands
+          </span>
+          <span class="trip-meta-item">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            June 26–29
+          </span>
         </div>
-        <div class="info-card">
-          <div>
-            <span class="label">Friends</span>
-            <p class="address">${state.friends.map((friend) => escapeHtml(friend.name)).join(", ")}</p>
-          </div>
-          <div>
-            <span class="label">Dates</span>
-            <p class="address">${escapeHtml(meta.dateRange)}</p>
-          </div>
+        <div class="quick-grid">
+          <button class="quick-chip" type="button" data-action="quick-goto" data-target="travel">
+            <span class="quick-icon" style="--qi-bg:#e0f2fe;--qi-c:#0284c7">🚗</span>
+            Travel
+          </button>
+          <button class="quick-chip" type="button" data-action="quick-goto" data-target="grocery">
+            <span class="quick-icon" style="--qi-bg:#fef9c3;--qi-c:#ca8a04">🛒</span>
+            Grocery
+          </button>
+          <button class="quick-chip" type="button" data-action="quick-goto" data-target="meals">
+            <span class="quick-icon" style="--qi-bg:#fce7f3;--qi-c:#db2777">🍳</span>
+            Meals
+          </button>
         </div>
-      </section>
+        <div class="link-row">
+          <a class="button" href="${escapeHtml(meta.mapsUrl || "#")}" target="_blank" rel="noopener noreferrer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            Google Maps
+          </a>
+          <a class="button" href="${escapeHtml(meta.airbnbUrl || "#")}" target="_blank" rel="noopener noreferrer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            Airbnb
+          </a>
+          <button class="button" type="button" data-action="copy-address">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            Copy address
+          </button>
+        </div>
+      </div>
     `;
   }
 
   function renderGroceries(open) {
     const groceries = [...state.groceries].sort(bySortThenName);
+    const remaining = groceries.filter((item) => !item.completed).length;
     return `
-      <details class="panel details-panel" data-section="groceries" ${open ? "open" : ""}>
-        <summary>
-          <div>
-            <h2>Grocery list</h2>
-            <p>${groceries.filter((item) => !item.completed).length} left</p>
+      <details class="section-accordion" data-section="groceries" ${open ? "open" : ""}>
+        <summary class="accordion-summary">
+          <div class="accordion-label">
+            <span class="accordion-icon">🛒</span>
+            <span>Grocery list</span>
           </div>
+          <span class="accordion-count">${remaining} left</span>
         </summary>
-        <div class="details-body">
+        <div class="accordion-body">
           <form class="grocery-form" data-action="add-grocery">
             <input class="field" name="name" type="text" placeholder="Add item" autocomplete="off" required>
             <select name="category" aria-label="Grocery category">
@@ -352,22 +373,27 @@
         <select data-collection="groceries" data-id="${escapeHtml(item.id)}" data-field="category" aria-label="Category for ${escapeHtml(item.name)}">
           ${CATEGORIES.map((category) => `<option value="${category}" ${item.category === category ? "selected" : ""}>${category}</option>`).join("")}
         </select>
-        <button class="icon-button" type="button" aria-label="Delete ${escapeHtml(item.name)}" data-action="delete-grocery" data-id="${escapeHtml(item.id)}">x</button>
+        <button class="icon-button danger-hover" type="button" aria-label="Delete ${escapeHtml(item.name)}" data-action="delete-grocery" data-id="${escapeHtml(item.id)}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
       </li>
     `;
   }
 
   function renderTimeline() {
-    const groupedDays = DAYS.map((day) => renderDay(day)).join("");
+    const tabs = DAYS.map((day) => `
+      <button class="day-tab ${ui.selectedDay === day.id ? "active" : ""}" type="button" data-action="select-day" data-id="${escapeHtml(day.id)}">
+        <span class="day-tab-date">${escapeHtml(day.label.split(" ")[2])}</span>
+        <span class="day-tab-day">${escapeHtml(day.label.split(" ")[0].slice(0, 2))}</span>
+      </button>
+    `).join("");
+
+    const activeDay = DAYS.find(d => d.id === ui.selectedDay) || DAYS[0];
+
     return `
       <section class="timeline">
-        <div class="section-heading">
-          <div>
-            <h2>Trip timeline</h2>
-            <p>Travel, departures, meals, and cleanup.</p>
-          </div>
+        <div class="day-tabs">
+          ${tabs}
         </div>
-        ${groupedDays}
+        ${renderDay(activeDay)}
       </section>
     `;
   }
@@ -375,31 +401,42 @@
   function renderDay(day) {
     const travel = state.travel.filter((item) => item.dayId === day.id).sort(bySortThenName);
     const meals = state.meals.filter((item) => item.dayId === day.id).sort(bySortThenName);
+    const travelTitle = day.id === "sunday" ? "Departures" : day.id === "monday" ? "Checkout" : "Travel";
     return `
-      <article class="panel day-panel">
-        <div class="day-header">
-          <h2>${escapeHtml(day.label)}</h2>
-          <span>${escapeHtml(day.subtitle)}</span>
-        </div>
-        <div class="day-body">
-          <div>
-            <div class="subsection-bar">
-              <h3 class="subsection-title">${day.id === "sunday" ? "Departures" : day.id === "monday" ? "Checkout" : "Travel"}</h3>
-              <form data-action="add-travel" data-day-id="${escapeHtml(day.id)}">
-                <button class="button small" type="submit">Add car</button>
+      <article class="day-panel">
+        <details class="section-accordion" data-section="travel" ${ui.travelOpen ? "open" : ""}>
+          <summary class="accordion-summary">
+            <div class="accordion-label">
+              <span class="accordion-icon">🚗</span>
+              <span>${travelTitle}</span>
+            </div>
+            <div class="accordion-right">
+              <span class="accordion-count">${travel.length} ${travel.length === 1 ? "car" : "cars"}</span>
+              <form data-action="add-travel" data-day-id="${escapeHtml(day.id)}" style="display:contents">
+                <button class="button small" type="submit" onclick="event.stopPropagation()">+ Add</button>
               </form>
             </div>
+          </summary>
+          <div class="accordion-body">
             <div class="card-grid">
-              ${travel.map(renderTravelCard).join("") || `<p class="empty-state">No travel rows.</p>`}
+              ${travel.map(renderTravelCard).join("") || `<p class="empty-state">No travel rows yet.</p>`}
             </div>
           </div>
-          <div>
-            <h3 class="subsection-title">Meals</h3>
+        </details>
+        <details class="section-accordion" data-section="meals" ${ui.mealsOpen ? "open" : ""}>
+          <summary class="accordion-summary">
+            <div class="accordion-label">
+              <span class="accordion-icon">🍳</span>
+              <span>Meals</span>
+            </div>
+            <span class="accordion-count">${meals.length} ${meals.length === 1 ? "meal" : "meals"}</span>
+          </summary>
+          <div class="accordion-body">
             <div class="card-grid">
               ${meals.map(renderMealCard).join("")}
             </div>
           </div>
-        </div>
+        </details>
       </article>
     `;
   }
@@ -410,7 +447,7 @@
       <div class="edit-card">
         <div class="card-head">
           <h4>${isCheckout ? "Checkout / departure notes" : `${escapeHtml(item.driver || "Unassigned")} car`}</h4>
-          ${isCheckout ? "" : `<button class="icon-button" type="button" aria-label="Delete travel row" data-action="delete-travel" data-id="${escapeHtml(item.id)}">x</button>`}
+          ${isCheckout ? "" : `<button class="icon-button danger-hover" type="button" aria-label="Delete travel row" data-action="delete-travel" data-id="${escapeHtml(item.id)}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>`}
         </div>
         ${isCheckout ? "" : renderTravelFields(item)}
         ${renderTaskList(item)}
@@ -465,7 +502,7 @@
       <li class="task-item ${task.completed ? "is-complete" : ""}">
         <input class="check" type="checkbox" aria-label="Complete task" data-action="toggle-task" data-travel-id="${escapeHtml(travelId)}" data-task-id="${escapeHtml(task.id)}" ${task.completed ? "checked" : ""}>
         <input class="field task-text" type="text" value="${escapeHtml(task.text)}" data-action="edit-task" data-travel-id="${escapeHtml(travelId)}" data-task-id="${escapeHtml(task.id)}">
-        <button class="icon-button" type="button" aria-label="Delete task" data-action="delete-task" data-travel-id="${escapeHtml(travelId)}" data-task-id="${escapeHtml(task.id)}">x</button>
+        <button class="icon-button danger-hover" type="button" aria-label="Delete task" data-action="delete-task" data-travel-id="${escapeHtml(travelId)}" data-task-id="${escapeHtml(task.id)}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
       </li>
     `;
   }
@@ -487,10 +524,8 @@
             <label for="${item.id}-ingredients">Ingredients</label>
             <textarea id="${item.id}-ingredients" data-collection="meals" data-id="${escapeHtml(item.id)}" data-field="ingredients">${escapeHtml((item.ingredients || []).join("\n"))}</textarea>
           </div>
-          ${renderAssignee(item, "headChef", "Head chef", false)}
-          ${renderAssignee(item, "helper", "Helper", false)}
           <div class="field-group wide">
-            ${renderAssignee(item, "cleaners", "Cleaners", true)}
+            ${renderAssignee(item, "headChef", "Head chef", false)}
           </div>
         </div>
       </div>
@@ -571,8 +606,13 @@
     if (target.matches('[data-section="groceries"]')) {
       ui.groceryOpen = target.open;
     }
+    if (target.matches('[data-section="travel"]')) {
+      ui.travelOpen = target.open;
+    }
+    if (target.matches('[data-section="meals"]')) {
+      ui.mealsOpen = target.open;
+    }
   }, true);
-
   document.addEventListener("submit", async (event) => {
     const form = event.target;
     if (!(form instanceof HTMLFormElement)) return;
@@ -616,6 +656,25 @@
     if (!store) return;
 
     const action = target.dataset.action;
+
+    if (action === "select-day") {
+      ui.selectedDay = target.dataset.id;
+      render();
+      return;
+    }
+
+    if (action === "quick-goto") {
+      const dest = target.dataset.target;
+      if (dest === "grocery") { ui.groceryOpen = true; }
+      else if (dest === "travel") { ui.travelOpen = true; }
+      else if (dest === "meals") { ui.mealsOpen = true; }
+      render();
+      requestAnimationFrame(() => {
+        const el = document.querySelector(`[data-section="${dest === "grocery" ? "groceries" : dest}"]`);
+        el?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      return;
+    }
 
     if (action === "copy-address") {
       try {
